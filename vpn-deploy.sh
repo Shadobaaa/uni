@@ -291,10 +291,26 @@ if [[ -f "$REALITY_KEYS_FILE" && "$REINSTALL" != "true" ]]; then
 . "$REALITY_KEYS_FILE"
 log_ok "Ключи взяты из $REALITY_KEYS_FILE"
 else
-REALITY_PUB="$(docker exec 3x-ui xray x25519 2>/dev/null | awk -F': ' '/Public key/{print $2}' | tr -d ' \n')"
-REALITY_PRIV="$(docker exec 3x-ui xray x25519 2>/dev/null | awk -F': ' '/Private key/{print $2}' | tr -d ' \n')"
+# Генерируем ключи через openssl (не зависит от наличия xray в контейнере)
+# Создаём временный файл для приватного ключа
+local tmp_priv=$(mktemp)
+local tmp_pub=$(mktemp)
+trap "rm -f '$tmp_priv' '$tmp_pub'" RETURN
+
+# Генерация private key
+openssl genpkey -algorithm X25519 -out "$tmp_priv" 2>/dev/null \
+|| die "Не удалось сгенерировать приватный ключ X25519"
+
+# Извлечение public key
+openssl pkey -in "$tmp_priv" -pubout -out "$tmp_pub" 2>/dev/null \
+|| die "Не удалось извлечь публичный ключ X25519"
+
+# Конвертируем в формат, ожидаемый Xray (base64 без переносов)
+REALITY_PRIV=$(openssl pkey -in "$tmp_priv" -outform DER 2>/dev/null | tail -c 32 | base64 -w0)
+REALITY_PUB=$(openssl pkey -in "$tmp_pub" -pubin -outform DER 2>/dev/null | tail -c 32 | base64 -w0)
+
 [[ -n "$REALITY_PUB" && -n "$REALITY_PRIV" ]] \
-|| die "Не удалось сгенерировать x25519 ключи (проверьте, что контейнер 3x-ui запущен)"
+|| die "Не удалось сгенерировать x25519 ключи"
 SHORT_ID="$(openssl rand -hex 8)"
 CLIENT_UUID="$(uuidgen)"
 cat >"$REALITY_KEYS_FILE" <<EOF
