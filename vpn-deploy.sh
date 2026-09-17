@@ -291,10 +291,10 @@ if [[ -f "$REALITY_KEYS_FILE" && "$REINSTALL" != "true" ]]; then
 . "$REALITY_KEYS_FILE"
 log_ok "Ключи взяты из $REALITY_KEYS_FILE"
 else
-REALITY_PUB="$(xray x25519 2>/dev/null | awk -F': ' '/Public key/{print $2}' | tr -d ' \n')"
-REALITY_PRIV="$(xray x25519 2>/dev/null | awk -F': ' '/Private key/{print $2}' | tr -d ' \n')"
+REALITY_PUB="$(docker exec 3x-ui xray x25519 2>/dev/null | awk -F': ' '/Public key/{print $2}' | tr -d ' \n')"
+REALITY_PRIV="$(docker exec 3x-ui xray x25519 2>/dev/null | awk -F': ' '/Private key/{print $2}' | tr -d ' \n')"
 [[ -n "$REALITY_PUB" && -n "$REALITY_PRIV" ]] \
-|| die "Не удалось сгенерировать x25519 ключи"
+|| die "Не удалось сгенерировать x25519 ключи (проверьте, что контейнер 3x-ui запущен)"
 SHORT_ID="$(openssl rand -hex 8)"
 CLIENT_UUID="$(uuidgen)"
 cat >"$REALITY_KEYS_FILE" <<EOF
