@@ -342,7 +342,7 @@ ufw allow "${XRAY_INBOUND_PORT}/tcp" comment 'VLESS-Reality (TCP 443)'
 if [[ -n "$DOMAIN" ]]; then
 ufw allow "${PANEL_TLS_PORT}/tcp" comment 'HTTPS → nginx → 3X-UI panel'
 fi
-yes | ufw enable
+ufw --force enable
 ufw status verbose
 local ports="22,80,${XRAY_INBOUND_PORT}"
 [[ -n "$DOMAIN" ]] && ports+=",${PANEL_TLS_PORT}"
